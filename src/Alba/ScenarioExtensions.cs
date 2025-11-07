@@ -35,29 +35,19 @@ public static class ScenarioExtensions
 
         // Set the URL
         var sendExpression = urlExpression.Url(relativeUrl);
-
+        
         // Copy headers (excluding Content headers which are handled separately)
         foreach (var header in request.Headers)
         {
             var headerValue = string.Join(", ", header.Value);
             
-            // Handle Authorization Bearer token specially
-            if (header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase) 
-                && headerValue.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-            {
-                var token = headerValue["Bearer ".Length..];
-                scenario.WithBearerToken(token);
-            }
-            else
-            {
-                scenario.WithRequestHeader(header.Key, headerValue);
-            }
+            scenario.WithRequestHeader(header.Key, headerValue);
         }
 
         // Handle request content if present
         if (request.Content != null)
         {
-            var contentBytes = request.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult();
+            var contentBytes = request.Content.ReadAsStream();
             
             // Copy content-type header from content
             if (request.Content.Headers.ContentType != null)
@@ -76,7 +66,7 @@ public static class ScenarioExtensions
             }
 
             // Write content to scenario
-            scenario.ByteArray(contentBytes);
+            scenario.Stream(contentBytes);
         }
 
         return sendExpression;
